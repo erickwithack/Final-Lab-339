@@ -80,14 +80,15 @@ public class TableStats {
      */
 
      private DbFile db;
-     private int numFields;
+     private int numberofFields;
      private int[] min;
+
     
-     private int numTuples;
-    private int[] max;
+     private int[] max;
      private HashMap<String, StringHistogram> stringHist;
      private TransactionId tid;
      private HashMap<String, IntHistogram> integerHist;
+     private int numberOfTuples;
      
     
      private int costperpage;
@@ -102,13 +103,13 @@ public class TableStats {
         // in a single scan of the table.
         // TODO: some code goes here
         this.db=Database.getCatalog().getDatabaseFile(tableid);
-        this.numFields =db.getTupleDesc().numFields();
+        this.numberofFields =db.getTupleDesc().numFields();
         this.tid=new TransactionId();
         DbFileIterator it=db.iterator(tid);
-        this.numTuples=0;
+        this.numberOfTuples=0;
         Field f;
-        this.min=new int[numFields];
-        this.max=new int[numFields];
+        this.min=new int[numberofFields];
+        this.max=new int[numberofFields];
         this.costperpage=ioCostPerPage;
         String fn;
 
@@ -117,8 +118,7 @@ public class TableStats {
             it.open();
             Tuple tple=it.next();
 
-           
-            for(int j=0; j<numFields; j++) {
+            for(int j=0; j<numberofFields; j++) {
                 if(tple.getField(j).getType()== Type.INT_TYPE) {
                     this.min[j]=((IntField) tple.getField(j)).getValue();
                     this.max[j]=((IntField) tple.getField(j)).getValue();
@@ -127,7 +127,7 @@ public class TableStats {
             while(it.hasNext()) {
                 tple=it.next();     
                 
-                for(int j=0; j<numFields; j++) {
+                for(int j=0; j<numberofFields; j++) {
                     if(tple.getField(j).getType()==Type.INT_TYPE) {
                        if(((IntField)tple.getField(j)).getValue()>max[j])
                              max[j]=((IntField) tple.getField(j)).getValue();
@@ -141,48 +141,48 @@ public class TableStats {
 
 
         this.integerHist=new HashMap<>();
+        StringHistogram stringHist2;
         this.stringHist=new HashMap<>();
-        IntHistogram i2;
-        StringHistogram s2;
-
+        IntHistogram intHist2;
+        
         try {
             it.open();
             Tuple tple=it.next();
-            numTuples++;
-            for(int j=0; j<this.numFields; j++) {
-                f= tple.getField(j);
-                fn=db.getTupleDesc().getFieldName(j);
+            numberOfTuples++;
+            for(int j=0; j<this.numberofFields; j++) {
+                f = tple.getField(j);
+                fn = db.getTupleDesc().getFieldName(j);
                 if(f.getType()== Type.INT_TYPE) {
-                    i2=new IntHistogram(NUM_HIST_BINS, min[j], max[j]);
-                    i2.addValue(((IntField) f).getValue());
-                    integerHist.put(fn, i2);
+                    intHist2=new IntHistogram(NUM_HIST_BINS, min[j], max[j]);
+                    intHist2.addValue(((IntField) f).getValue());
+                    integerHist.put(fn, intHist2);
                 }
                 else {
-                    s2=new StringHistogram(NUM_HIST_BINS);
-                    s2.addValue(((StringField) f).getValue());
-                    stringHist.put(fn, s2);
+                    stringHist2=new StringHistogram(NUM_HIST_BINS);
+                    stringHist2.addValue(((StringField) f).getValue());
+                    stringHist.put(fn, stringHist2);
                 }
             }
 
             while(it.hasNext()) {
                 tple=it.next();
-                numTuples++;
-                for(int j=0; j<this.numFields; j++) {
+                numberOfTuples++;
+                for(int j=0; j<this.numberofFields; j++) {
                     f= tple.getField(j);
                     fn=db.getTupleDesc().getFieldName(j);
                     if(f.getType()== Type.INT_TYPE) {
-                        i2=this.integerHist.get(fn);
-                        i2.addValue(((IntField) f).getValue());
-                        if(((IntField) f).getValue()<i2.min)
-                            i2.min=((IntField) f).getValue();
-                        if(((IntField) f).getValue()>i2.max)
-                            i2.max=((IntField) f).getValue();
-                        integerHist.put(fn, i2);
+                        intHist2=this.integerHist.get(fn);
+                        intHist2.addValue(((IntField) f).getValue());
+                        if(((IntField) f).getValue()<intHist2.min)
+                        intHist2.min=((IntField) f).getValue();
+                        if(((IntField) f).getValue()>intHist2.max)
+                        intHist2.max=((IntField) f).getValue();
+                        integerHist.put(fn, intHist2);
                     }
                     else {
-                        s2=this.stringHist.get(fn);
-                        s2.addValue(((StringField) f).getValue());
-                        stringHist.put(fn, s2);
+                        stringHist2=this.stringHist.get(fn);
+                        stringHist2.addValue(((StringField) f).getValue());
+                        stringHist.put(fn, stringHist2);
                     }
                 }
             }
@@ -218,7 +218,7 @@ public class TableStats {
      */
     public int estimateTableCardinality(double selectivityFactor) {
         // TODO: some code goes here
-        int result = (int) (this.numTuples * selectivityFactor);
+        int result = (int) (this.numberOfTuples * selectivityFactor);
         return result;
     }
 
@@ -264,7 +264,7 @@ public class TableStats {
      */
     public int totalTuples() {
         // TODO: some code goes here
-        return this.numTuples;
+        return this.numberOfTuples;
     }
 
 }

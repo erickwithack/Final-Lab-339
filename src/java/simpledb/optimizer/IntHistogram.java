@@ -103,24 +103,32 @@ public class IntHistogram {
         double bucket_prev=h_/numberOfTuples;
         double rrnext=b__*bucket_prev;
         double resultFrmOtherBuckets=0;
-        for(int k=idx+1; k<numberOfBuckets; k++)
+
+        int k = idx+1;
+        while (k < numberOfBuckets){
             resultFrmOtherBuckets=resultFrmOtherBuckets+buckets[k];
+            k++;
+        }
+
         resultFrmOtherBuckets=resultFrmOtherBuckets/numberOfTuples;
-        double greaterSelec=resultFrmOtherBuckets+rrnext;
+        double gsec=resultFrmOtherBuckets+rrnext;
 
         if(op== Predicate.Op.GREATER_THAN)
-            return greaterSelec;
+            return gsec;
         else if (op== Predicate.Op.GREATER_THAN_OR_EQ) {
-            return greaterSelec+h_/w_/this.numberOfTuples;
+            double res = gsec+h_/w_/this.numberOfTuples;
+            return res;
         }
         else if (op==Predicate.Op.LESS_THAN_OR_EQ) {
-            return 1-greaterSelec;
+            return 1-gsec;
         }
         else if (op==Predicate.Op.LESS_THAN) {
-            return 1-greaterSelec-h_/w_/this.numberOfTuples;
+            double res = 1-gsec-h_/w_/this.numberOfTuples;
+            return res;
         }
         else if (op== Predicate.Op.LIKE) {
-            return 1/numberOfBuckets;   // ?
+            double res =  1/numberOfBuckets;
+            return res;
         }
         return -1.0;
     }
@@ -144,7 +152,6 @@ public class IntHistogram {
         // TODO: some code goes here
         String s = "";
         int idx = 0;
-
         while (idx < numberOfBuckets){
             s = s + Integer.toString(idx) + " = " + Integer.toString(buckets[idx]) + "; ";
             idx++;

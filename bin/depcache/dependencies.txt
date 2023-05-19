@@ -1643,7 +1643,6 @@ java.util.ArrayList
 simpledb.execution.Predicate
 java.util.HashSet
 simpledb.ParsingException
-java.util.Vector
 simpledb.execution.OpIterator
 java.util.Map
 simpledb.common.Database

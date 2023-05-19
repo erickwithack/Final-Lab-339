@@ -216,35 +216,36 @@ public class JoinOptimizer {
 
         // TODO: some code goes here
         // Replace the following.
-        PlanCache pc = new PlanCache();
+        PlanCache planCache_ = new PlanCache();
         Set<LogicalJoinNode> j = new HashSet<>(joins);
 
         for(int i=0; i <= enumerateSubsets(joins, 1).size(); i++) {
             for(Set<LogicalJoinNode> outerSet: enumerateSubsets(joins, i)) {
                 List<LogicalJoinNode> bestPlan = null;
-                double bestCost = Double.MAX_VALUE;
-                int bestCard = Integer.MAX_VALUE;
+                double highestCost = Double.MAX_VALUE;
+                int cardWithHighestCost = Integer.MAX_VALUE;
 
                 for(LogicalJoinNode innerSet: outerSet) {
-                    CostCard planCost = computeCostAndCardOfSubplan(stats, filterSelectivities, innerSet, outerSet, bestCost, pc);
+                    CostCard planCost = computeCostAndCardOfSubplan(stats, filterSelectivities, innerSet, outerSet, highestCost, planCache_);
                     if(planCost != null) {
-                        if(planCost.cost < bestCost) {
-                            bestCost = planCost.cost;
-                            bestCard = planCost.card;
+                        if(planCost.cost < highestCost) {
+                            highestCost = planCost.cost;
+                            cardWithHighestCost = planCost.card;
                             bestPlan = planCost.plan;
                         }
                     }
                 }
-                pc.addPlan(outerSet, bestCost, bestCard, bestPlan);
+                planCache_.addPlan(outerSet, highestCost, cardWithHighestCost, bestPlan);
             }
+        
         }
 
-        List<LogicalJoinNode> optimal = pc.getOrder(j);
+        List<LogicalJoinNode> result = planCache_.getOrder(j);
         if(explain) {
-            printJoins(optimal, pc, stats, filterSelectivities);
+            printJoins(result, planCache_, stats, filterSelectivities);
         }
 
-        return optimal;
+        return result;
     }
 
     // ===================== Private Methods =================================

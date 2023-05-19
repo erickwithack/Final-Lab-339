@@ -81,13 +81,17 @@ public class TableStats {
 
      private DbFile db;
      private int numFields;
-     private int numTuples;
-     private TransactionId tid;
-     private HashMap<String, IntHistogram> ihist;
-     private HashMap<String, StringHistogram> shist;
      private int[] min;
-     private int[] max;
+    
+     private int numTuples;
+    private int[] max;
+     private HashMap<String, StringHistogram> stringHist;
+     private TransactionId tid;
+     private HashMap<String, IntHistogram> integerHist;
+     
+    
      private int costperpage;
+
     public TableStats(int tableid, int ioCostPerPage) {
         // For this function, you'll have to get the
         // DbFile for the table in question,
@@ -111,71 +115,74 @@ public class TableStats {
         //determine min and max values for each histogram
         try {
             it.open();
-            Tuple tp=it.next();
+            Tuple tple=it.next();
+
+           
             for(int j=0; j<numFields; j++) {
-                if(tp.getField(j).getType()== Type.INT_TYPE) {
-                    this.min[j]=((IntField) tp.getField(j)).getValue();
-                    this.max[j]=((IntField) tp.getField(j)).getValue();
+                if(tple.getField(j).getType()== Type.INT_TYPE) {
+                    this.min[j]=((IntField) tple.getField(j)).getValue();
+                    this.max[j]=((IntField) tple.getField(j)).getValue();
                 }
             }
             while(it.hasNext()) {
-                tp=it.next();
+                tple=it.next();     
+                
                 for(int j=0; j<numFields; j++) {
-                    if(tp.getField(j).getType()==Type.INT_TYPE) {
-                        if(((IntField)tp.getField(j)).getValue()>max[j])
-                            max[j]=((IntField) tp.getField(j)).getValue();
-                        if(((IntField)tp.getField(j)).getValue()<min[j])
-                            min[j]=((IntField) tp.getField(j)).getValue();
-                    }
+                    if(tple.getField(j).getType()==Type.INT_TYPE) {
+                       if(((IntField)tple.getField(j)).getValue()>max[j])
+                             max[j]=((IntField) tple.getField(j)).getValue();
+                        if(((IntField)tple.getField(j)).getValue()<min[j])
+                         min[j]=((IntField) tple.getField(j)).getValue();
+                     }
                 }
             }
             it.close();
         } catch (DbException a) {} catch (TransactionAbortedException b) {}
 
 
-        this.ihist=new HashMap<>();
-        this.shist=new HashMap<>();
+        this.integerHist=new HashMap<>();
+        this.stringHist=new HashMap<>();
         IntHistogram i2;
         StringHistogram s2;
 
         try {
             it.open();
-            Tuple tp=it.next();
+            Tuple tple=it.next();
             numTuples++;
             for(int j=0; j<this.numFields; j++) {
-                f= tp.getField(j);
+                f= tple.getField(j);
                 fn=db.getTupleDesc().getFieldName(j);
                 if(f.getType()== Type.INT_TYPE) {
                     i2=new IntHistogram(NUM_HIST_BINS, min[j], max[j]);
                     i2.addValue(((IntField) f).getValue());
-                    ihist.put(fn, i2);
+                    integerHist.put(fn, i2);
                 }
                 else {
                     s2=new StringHistogram(NUM_HIST_BINS);
                     s2.addValue(((StringField) f).getValue());
-                    shist.put(fn, s2);
+                    stringHist.put(fn, s2);
                 }
             }
 
             while(it.hasNext()) {
-                tp=it.next();
+                tple=it.next();
                 numTuples++;
                 for(int j=0; j<this.numFields; j++) {
-                    f= tp.getField(j);
+                    f= tple.getField(j);
                     fn=db.getTupleDesc().getFieldName(j);
                     if(f.getType()== Type.INT_TYPE) {
-                        i2=this.ihist.get(fn);
+                        i2=this.integerHist.get(fn);
                         i2.addValue(((IntField) f).getValue());
                         if(((IntField) f).getValue()<i2.min)
                             i2.min=((IntField) f).getValue();
                         if(((IntField) f).getValue()>i2.max)
                             i2.max=((IntField) f).getValue();
-                        ihist.put(fn, i2);
+                        integerHist.put(fn, i2);
                     }
                     else {
-                        s2=this.shist.get(fn);
+                        s2=this.stringHist.get(fn);
                         s2.addValue(((StringField) f).getValue());
-                        shist.put(fn, s2);
+                        stringHist.put(fn, s2);
                     }
                 }
             }
@@ -197,8 +204,8 @@ public class TableStats {
      */
     public double estimateScanCost() {
         // TODO: some code goes here
-        int pageCount =((HeapFile) db).numPages();
-        return pageCount * this.costperpage;
+        int result =((HeapFile) db).numPages() * this.costperpage;
+        return result;
     }
 
     /**
@@ -211,7 +218,8 @@ public class TableStats {
      */
     public int estimateTableCardinality(double selectivityFactor) {
         // TODO: some code goes here
-        return (int) (this.numTuples * selectivityFactor);
+        int result = (int) (this.numTuples * selectivityFactor);
+        return result;
     }
 
     /**
@@ -240,14 +248,14 @@ public class TableStats {
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
         // TODO: some code goes here
-        String fn=db.getTupleDesc().getFieldName(field);
+        String fn_ = db.getTupleDesc().getFieldName(field);
         if(constant.getType()==Type.INT_TYPE) {
-            IntHistogram hist = ihist.get(fn);
-            return hist.estimateSelectivity(op, ((IntField) constant).getValue());
+            IntHistogram integerHistogram_ = integerHist.get(fn_);
+            return integerHistogram_.estimateSelectivity(op, ((IntField) constant).getValue());
         }
         else {
-            StringHistogram hist= shist.get(fn);
-            return hist.estimateSelectivity(op, ((StringField) constant).getValue());
+            StringHistogram stringHistogram_= stringHist.get(fn_);
+            return stringHistogram_.estimateSelectivity(op, ((StringField) constant).getValue());
         }
     }
 
